@@ -49,6 +49,18 @@ def make_rng(random_state: int | None = None) -> np.random.Generator:
     return np.random.default_rng(random_state)
 
 
+def validate_binary_y(
+    y: ArrayLike, n_samples: int | None = None, *, require_both_classes: bool = False
+) -> FloatArray:
+    """Validate finite 1D labels drawn from {0, 1}; optionally require both."""
+    target = validate_y(y, n_samples)
+    if not np.isin(target, [0, 1]).all():
+        raise ValueError("Binary labels must be 0 or 1.")
+    if require_both_classes and np.unique(target).size != 2:
+        raise ValueError("Training labels must contain both binary classes, 0 and 1.")
+    return target
+
+
 def train_test_split(
     X: ArrayLike,
     y: ArrayLike,
