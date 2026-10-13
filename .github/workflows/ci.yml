@@ -21,11 +21,11 @@ jobs:
       - run: ruff format --check .
       - run: python -m pytest
       - run: python -m build
-      - name: Execute the linear regression notebook
+      - name: Execute the algorithm notebooks
         env:
           MPLBACKEND: Agg
         run: >-
           jupyter nbconvert --to notebook --execute
-          notebooks/01_linear_regression.ipynb
+          notebooks/*.ipynb
           --output-dir "${{ runner.temp }}"
           --ExecutePreprocessor.timeout=120
