@@ -6,8 +6,11 @@ from sklearn import metrics as reference
 
 from minilearn.metrics import (
     accuracy_score,
+    f1_score,
     mean_squared_error,
+    precision_score,
     r2_score,
+    recall_score,
     root_mean_squared_error,
 )
 
@@ -69,3 +72,45 @@ def test_invalid_regression_inputs(metric, actual, predicted, message):
 def test_invalid_accuracy_inputs(actual, predicted, message):
     with pytest.raises(ValueError, match=message):
         accuracy_score(actual, predicted)
+
+
+@pytest.mark.parametrize(
+    "metric, reference_metric",
+    [
+        (precision_score, reference.precision_score),
+        (recall_score, reference.recall_score),
+        (f1_score, reference.f1_score),
+    ],
+)
+@pytest.mark.parametrize(
+    "actual, predicted",
+    [
+        ([0, 1, 1, 0, 1], [0, 1, 0, 1, 1]),
+        ([0, 0], [0, 0]),
+        ([1, 1], [0, 0]),
+        ([0, 0], [1, 1]),
+        ([1, 1], [1, 1]),
+    ],
+)
+def test_binary_metrics_match_sklearn(metric, reference_metric, actual, predicted):
+    assert metric(actual, predicted) == pytest.approx(
+        reference_metric(actual, predicted, zero_division=0)
+    )
+
+
+@pytest.mark.parametrize("metric", [precision_score, recall_score, f1_score])
+@pytest.mark.parametrize(
+    "actual, predicted, message",
+    [
+        ([], [], "nonempty"),
+        ([0, 1], [1], "same shape"),
+        ([[0], [1]], [0, 1], "1D"),
+        ([0, np.nan], [0, 1], "finite"),
+        ([0, 1], [0, np.inf], "finite"),
+        ([0, 2], [0, 1], "0 or 1"),
+        ([0, 1], [-1, 1], "0 or 1"),
+    ],
+)
+def test_invalid_binary_metric_inputs(metric, actual, predicted, message):
+    with pytest.raises(ValueError, match=message):
+        metric(actual, predicted)

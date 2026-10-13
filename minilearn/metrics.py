@@ -1,9 +1,9 @@
-"""Single-output regression metrics and classification accuracy."""
+"""Single-output regression metrics and classification metrics."""
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from minilearn.utils import FloatArray, validate_y
+from minilearn.utils import FloatArray, validate_binary_y, validate_y
 
 
 def _paired_targets(y_true: ArrayLike, y_pred: ArrayLike) -> tuple[FloatArray, FloatArray]:
@@ -52,3 +52,32 @@ def accuracy_score(y_true: ArrayLike, y_pred: ArrayLike) -> float:
         if array.dtype.kind in "biufc" and not np.isfinite(array).all():
             raise ValueError("Labels must not contain NaN or infinity.")
     return float(np.mean(actual == predicted))
+
+
+def _binary_counts(y_true: ArrayLike, y_pred: ArrayLike) -> tuple[int, int, int]:
+    actual = validate_binary_y(y_true)
+    predicted = validate_binary_y(y_pred)
+    if actual.shape != predicted.shape:
+        raise ValueError("y_true and y_pred must have the same shape.")
+    true_positive = int(np.count_nonzero((actual == 1) & (predicted == 1)))
+    false_positive = int(np.count_nonzero((actual == 0) & (predicted == 1)))
+    false_negative = int(np.count_nonzero((actual == 1) & (predicted == 0)))
+    return true_positive, false_positive, false_negative
+
+
+def precision_score(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Return TP / (TP + FP) for positive label 1; return 0 if undefined."""
+    tp, fp, _ = _binary_counts(y_true, y_pred)
+    return tp / (tp + fp) if tp + fp else 0.0
+
+
+def recall_score(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Return TP / (TP + FN) for positive label 1; return 0 if undefined."""
+    tp, _, fn = _binary_counts(y_true, y_pred)
+    return tp / (tp + fn) if tp + fn else 0.0
+
+
+def f1_score(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Return 2 TP / (2 TP + FP + FN); return 0 if undefined."""
+    tp, fp, fn = _binary_counts(y_true, y_pred)
+    return 2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0
